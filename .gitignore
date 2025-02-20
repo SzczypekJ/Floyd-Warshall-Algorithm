@@ -4,10 +4,7 @@ target/
 !**/src/test/**/target/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -17,7 +14,7 @@ target/
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
@@ -27,12 +24,26 @@ target/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+### Build directories ###
 build/
+out/
+bin/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+### IDE Configs ###
 .vscode/
 
-### Mac OS ###
+### Logs ###
+logs/
+*.log
+
+### Compiled files ###
+*.class
+*.jar
+*.war
+*.zip
+
+### OS Files ###
 .DS_Store
