@@ -25,7 +25,38 @@ public class NavigatorController {
         boolean exit = false;
 
         while (!exit) {
-            System.out.println("\nMenu:");
+            System.out.println("\n----- Main Menu -----");
+            System.out.println("1. Work with the database (stations/roads)");
+            System.out.println("2. Work with the Floyd-Warshall Algorithm (placeholder)");
+            System.out.println("3. Exit the application");
+            System.out.print("Choose an option: ");
+
+            int choiceMain = scanner.nextInt();
+            scanner.nextLine(); // consume leftover newline
+
+            switch (choiceMain) {
+                case 1:
+                    handleDatabaseOperations(scanner);
+                    break;
+                case 2:
+                    handleAlgorithmMenu(scanner);
+                    break;
+                case 3:
+                    exit = true;
+                    System.out.println("Exiting the application...");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+                    break;
+            }
+        }
+    }
+
+    private void handleDatabaseOperations(Scanner scanner) {
+        boolean exitDatabase = false;
+
+        while (!exitDatabase) {
+            System.out.println("\n==== Database Operations Menu ====");
             System.out.println("1. List all stations");
             System.out.println("2. Get station by ID");
             System.out.println("3. Create new station");
@@ -37,7 +68,7 @@ public class NavigatorController {
             System.out.println("9. Create new road");
             System.out.println("10. Update road by ID");
             System.out.println("11. Delete road by ID");
-            System.out.println("12. Exit");
+            System.out.println("12. Return to Main Menu");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -78,11 +109,44 @@ public class NavigatorController {
                     deleteRoadById(scanner);
                     break;
                 case 12:
-                    exit = true;
-                    System.out.println("Exiting the Navigator...");
+                    exitDatabase = true;
+                    System.out.println("Returning to Main Menu...");
                     break;
                 default:
                     System.out.println("Invalid choice. Please select again.");
+                    break;
+            }
+        }
+    }
+
+    private void handleAlgorithmMenu(Scanner scanner) {
+        boolean exitAlgorithm = false;
+
+        while (!exitAlgorithm) {
+            System.out.println("\n==== Floyd-Warshall Algorithm Menu (Placeholder) ====");
+            System.out.println("1. (Future) Compute shortest path");
+            System.out.println("2. (Future) Compute alternative path");
+            System.out.println("3. Return to Main Menu");
+            System.out.print("Choose an option: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (choice) {
+                case 1:
+                    System.out.println("(Placeholder) Here we will compute shortest path in the future.");
+                    // TODO: Implement Floyd-Warshall logic
+                    break;
+                case 2:
+                    System.out.println("(Placeholder) Here we will compute an alternative path in the future.");
+                    // TODO: Implement alternative path logic
+                    break;
+                case 3:
+                    exitAlgorithm = true;
+                    System.out.println("Returning to Main Menu...");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
                     break;
             }
         }
