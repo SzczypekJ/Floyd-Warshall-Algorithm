@@ -25,14 +25,14 @@ public class NavigatorController {
         boolean exit = false;
 
         while (!exit) {
-            System.out.println("\n----- Main Menu -----");
+            System.out.println("\n==== Main Menu ====");
             System.out.println("1. Work with the database (stations/roads)");
             System.out.println("2. Work with the Floyd-Warshall Algorithm (placeholder)");
             System.out.println("3. Exit the application");
             System.out.print("Choose an option: ");
 
             int choiceMain = scanner.nextInt();
-            scanner.nextLine(); // consume leftover newline
+            scanner.nextLine();
 
             switch (choiceMain) {
                 case 1:
@@ -123,9 +123,9 @@ public class NavigatorController {
         boolean exitAlgorithm = false;
 
         while (!exitAlgorithm) {
-            System.out.println("\n==== Floyd-Warshall Algorithm Menu (Placeholder) ====");
-            System.out.println("1. (Future) Compute shortest path");
-            System.out.println("2. (Future) Compute alternative path");
+            System.out.println("\n==== Floyd-Warshall Algorithm Menu ====");
+            System.out.println("1. Compute shortest path (placeholder)");
+            System.out.println("2. Compute alternative path (placeholder)");
             System.out.println("3. Return to Main Menu");
             System.out.print("Choose an option: ");
 
@@ -134,12 +134,10 @@ public class NavigatorController {
 
             switch (choice) {
                 case 1:
-                    System.out.println("(Placeholder) Here we will compute shortest path in the future.");
-                    // TODO: Implement Floyd-Warshall logic
+                    calculateRoute(scanner, false);
                     break;
                 case 2:
-                    System.out.println("(Placeholder) Here we will compute an alternative path in the future.");
-                    // TODO: Implement alternative path logic
+                    calculateRoute(scanner, true);
                     break;
                 case 3:
                     exitAlgorithm = true;
@@ -151,6 +149,61 @@ public class NavigatorController {
             }
         }
     }
+
+    private void calculateRoute(Scanner scanner, boolean alternative) {
+        System.out.print("Enter start station name: ");
+        String startName = scanner.nextLine().trim();
+
+        Station startStation = getStationByName(startName);
+
+        if (startStation == null) {
+            System.out.println("Station " + startName + " does not exist.");
+            return;
+        }
+
+        System.out.print("Enter destination station name: ");
+        String endName = scanner.nextLine().trim();
+
+        Station endStation = getStationByName(endName);
+        if (endStation == null) {
+            System.out.println("Station '" + endName + "' does not exist.");
+            return;
+        }
+
+        System.out.print("Enter mode of transport (CAR or BUS): ");
+        String mode = scanner.nextLine().trim().toUpperCase();
+
+        if (!mode.equals("CAR") && !mode.equals("BUS")) {
+            System.out.println("Invalid mode. Please enter CAR or BUS.");
+            return;
+        }
+
+        computeRoute(startStation.getStationId(), endStation.getStationId(), mode, alternative);
+    }
+
+    private Station getStationByName(String name) {
+
+        List<Station> stations = stationService.getAllStations();
+        for (Station s : stations) {
+            if (s.getName().equalsIgnoreCase(name)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private void computeRoute(int startStationId, int endStationId, String mode, boolean alternative) {
+        if (!alternative) {
+            System.out.println("Feature in progress: computing shortest path from "
+                    + startStationId + " to " + endStationId + " via " + mode + "...");
+        } else {
+            System.out.println("Feature in progress: computing alternative path from "
+                    + startStationId + " to " + endStationId + " via " + mode + "...");
+        }
+        // TODO: Integrate real Floyd-Warshall logic here
+    }
+
+
 
     private void listAllStations() {
         List<Station> stations = stationService.getAllStations();
