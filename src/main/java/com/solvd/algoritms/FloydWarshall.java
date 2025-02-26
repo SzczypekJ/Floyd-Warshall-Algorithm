@@ -1,5 +1,6 @@
 package com.solvd.algoritms;
 
+import com.solvd.models.Station;
 import com.solvd.utils.BusGraph;
 import com.solvd.utils.BusVertex;
 import com.solvd.utils.GraphManager;
@@ -61,10 +62,14 @@ public class FloydWarshall {
     public static class Route {
         public List<Integer> stationIds;
         public List<String> details;
+        public String startName;
+        public String endName;
 
         public Route() {
             this.stationIds = new ArrayList<>();
             this.details = new ArrayList<>();
+            this.startName = "";
+            this.endName = "";
         }
 
         @Override
@@ -73,13 +78,18 @@ public class FloydWarshall {
                 return "No path found.";
             }
             StringBuilder sb = new StringBuilder();
-            sb.append("Path from station ").append(stationIds.get(0))
-                    .append(" to station ").append(stationIds.get(stationIds.size() - 1))
-                    .append(":\n");
-            for (int i = 0; i < stationIds.size(); i++) {
-                sb.append("Station ").append(stationIds.get(i))
-                        .append(": ").append(details.get(i)).append("\n");
+            sb.append("Shortest path from station ")
+                    .append(startName)
+                    .append(" to station ")
+                    .append(endName)
+                    .append(":\nRoute: ");
+            for (int i = 0; i < details.size(); i++) {
+                sb.append(details.get(i));
+                if (i < details.size() - 1) {
+                    sb.append(" -> ");
+                }
             }
+            sb.append("\n");
             return sb.toString();
         }
     }
@@ -117,23 +127,27 @@ public class FloydWarshall {
             int minTransfers = Integer.MAX_VALUE;
             int minStations = Integer.MAX_VALUE;
 
-            System.out.println("Debugging BUS path options:");
-            for (int startIdx : startVertices) {
-                for (int endIdx : endVertices) {
-                    if (graph[startIdx][endIdx] < INF) {
-                        List<Integer> path = getPath(startIdx, endIdx, next);
+//            System.out.println("Debugging BUS path options:");
+            for (int sIdx : startVertices) {
+                for (int eIdx : endVertices) {
+                    if (graph[sIdx][eIdx] < INF) {
+                        List<Integer> path = getPath(sIdx, eIdx, next);
                         int stationCount = countUniqueStations(path, bg.getVertices());
                         int transferCount = countTransfers(path, bg.getVertices());
-                        System.out.printf("Path from %s to %s: stations=%d, transfers=%d, dist=%.2f\n",
-                                bg.getVertices().get(startIdx).getLabel(), bg.getVertices().get(endIdx).getLabel(),
-                                stationCount, transferCount, graph[startIdx][endIdx]);
-                        if (transferCount < minTransfers || (transferCount == minTransfers && stationCount < minStations)
-                                || (transferCount == minTransfers && stationCount == minStations && graph[startIdx][endIdx] < minDist)) {
-                            minDist = graph[startIdx][endIdx];
-                            bestStartIdx = startIdx;
-                            bestEndIdx = endIdx;
+                        double dist = graph[sIdx][eIdx];
+//                        System.out.printf("Path from %s to %s: stations=%d, transfers=%d, dist=%.2f\n",
+//                                bg.getVertices().get(sIdx).getLabel(),
+//                                bg.getVertices().get(eIdx).getLabel(),
+//                                stationCount, transferCount, dist);
+
+                        if (transferCount < minTransfers
+                                || (transferCount == minTransfers && stationCount < minStations)
+                                || (transferCount == minTransfers && stationCount == minStations && dist < minDist)) {
+                            minDist      = dist;
+                            bestStartIdx = sIdx;
+                            bestEndIdx   = eIdx;
                             minTransfers = transferCount;
-                            minStations = stationCount;
+                            minStations  = stationCount;
                         }
                     }
                 }
@@ -143,27 +157,68 @@ public class FloydWarshall {
                 return route;
             }
 
+            // Reconstruct actual path
             List<Integer> pathIndices = getPath(bestStartIdx, bestEndIdx, next);
             String currentColor = bg.getVertices().get(bestStartIdx).getLabel();
             route.stationIds.add(bg.getVertices().get(bestStartIdx).getStationId());
-            route.details.add("BUS COLOR: " + currentColor);
 
+            // keep track of the first and last station IDs
+            int firstStId = bg.getVertices().get(bestStartIdx).getStationId();
+            int lastStId  = firstStId;
+
+            // get a name for the first station
+            String firstStationName = findStationNameById(firstStId, gm.getStations());
+
+            // minimal fix #1: store the station name in a variable so we can reference it
+            // if the color changes at the *previous* station
+            String lastStationName  = firstStationName;
+
+            // initial line: "At station StationD get into BUS COLOR: GREEN"
+            route.details.add("At station " + lastStationName + " get into BUS COLOR: " + currentColor);
+
+            // Walk the path, skipping repeated color if label is the same
             for (int i = 1; i < pathIndices.size(); i++) {
                 BusVertex vertex = bg.getVertices().get(pathIndices.get(i));
                 int stationId = vertex.getStationId();
+                String stationName = findStationNameById(stationId, gm.getStations());
+                lastStId = stationId;
                 String label = vertex.getLabel();
 
+                // if new station
                 if (route.stationIds.get(route.stationIds.size() - 1) != stationId) {
                     route.stationIds.add(stationId);
-                    if ("TRANSFER".equals(label)) {
-                        route.details.add("Transfer from " + currentColor);
-                    } else {
+                }
+
+                if ("TRANSFER".equals(label)) {
+                    // "Transfer from GREEN"
+                    route.details.add("Transfer from " + currentColor);
+                } else {
+                    // minimal fix #2: if label != currentColor, we say
+                    // "At station <lastStationName> get into BUS COLOR: <label>"
+                    if (!label.equals(currentColor)) {
                         currentColor = label;
-                        route.details.add("BUS COLOR: " + label);
+                        // we do the color switch at the station we just arrived at
+                        route.details.add("At station " + stationName + " get into BUS COLOR: " + currentColor);
+
+                        // or if you want the color switch to be labeled at the PREVIOUS station:
+                        // route.details.add("At station " + lastStationName + " get into BUS COLOR: " + currentColor);
+                        // But that depends on the exact route logic.
                     }
                 }
+                // minimal fix #3: update lastStationName to the station we arrived at
+                lastStationName = stationName;
             }
+
+            // fill in startName, endName
+            route.startName = firstStationName;
+            route.endName   = findStationNameById(lastStId, gm.getStations());
+
+            // final line: "ride until station B"
+            String lastStName = findStationNameById(lastStId, gm.getStations());
+            route.details.add("ride until " + lastStName);
+
             return route;
+
         } else {
             double[][] graph = gm.buildAdjacencyMatrix(mode);
             int startIdx = gm.indexOfStation(startStationId);
@@ -180,10 +235,28 @@ public class FloydWarshall {
             List<Integer> pathIndices = getPath(startIdx, endIdx, next);
             for (int idx : pathIndices) {
                 route.stationIds.add(gm.getStations().get(idx).getStationId());
-                route.details.add("BY CAR");
+                String stationName = gm.getStations().get(idx).getName();
+                route.details.add(stationName + " (BY CAR)");
+            }
+            if (!route.stationIds.isEmpty()) {
+                route.startName = gm.getStations().get(pathIndices.get(0)).getName();
+                route.endName = gm.getStations().get(pathIndices.get(pathIndices.size() - 1)).getName();
             }
             return route;
         }
+    }
+
+    /**
+     * Minimal helper to map stationId -> stationName by looping gm.getStations().
+     * Comment: We do not have a gm.findStationNameById method, so let's do it here.
+     */
+    private static String findStationNameById(int stationId, List<Station> stationList) {
+        for (Station st : stationList) {
+            if (st.getStationId() == stationId) {
+                return st.getName();
+            }
+        }
+        return String.valueOf(stationId);
     }
 
     /**
@@ -277,7 +350,13 @@ public class FloydWarshall {
                 altPathIndices.get(altPathIndices.size() - 1) == endIndex) {
             for (int idx : altPathIndices) {
                 altRoute.stationIds.add(gm.getStations().get(idx).getStationId());
-                altRoute.details.add("BY CAR");
+                String stationName = gm.getStations().get(idx).getName();
+                altRoute.details.add(stationName + " (BY CAR)");
+            }
+
+            if (!altRoute.stationIds.isEmpty()) {
+                altRoute.startName = gm.getStations().get(altPathIndices.get(0)).getName();
+                altRoute.endName = gm.getStations().get(altPathIndices.get(altPathIndices.size() - 1)).getName();
             }
         }
         return altRoute;
