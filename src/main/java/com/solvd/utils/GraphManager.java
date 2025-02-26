@@ -7,9 +7,7 @@ import com.solvd.service.RoadServiceImpl;
 import com.solvd.service.StationService;
 import com.solvd.service.StationServiceImpl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * The {@code GraphManager} class is responsible for constructing an adjacency matrix
@@ -17,6 +15,7 @@ import java.util.List;
  * It supports different travel modes (CAR, BUS) and calculates distances using the Euclidean formula.
  */
 public class GraphManager {
+    private static final double INF = Double.MAX_VALUE;
 
     private List<Station> stations;
     private List<Road> roads;
@@ -87,13 +86,108 @@ public class GraphManager {
         return matrix;
     }
 
+    public BusGraph buildBusGraph() {
+        fetchDataFromDatabase();
+
+        Map<Integer, Set<String>> stationColors = new HashMap<>();
+        for (Station s : stations) {
+            stationColors.put(s.getStationId(), new HashSet<>());
+        }
+        for (Road r : roads) {
+            if (r.getMode().equalsIgnoreCase("BUS")) {
+                int fromId = r.getFromStationId();
+                int toId = r.getToStationId();
+                String color = r.getBusColor();
+                stationColors.get(fromId).add(color);
+                stationColors.get(toId).add(color);
+            }
+        }
+        List<BusVertex> vertices = new ArrayList<>();
+        Map<String, Integer> vertexToIndex = new HashMap<>();
+        Map<Integer, List<Integer>> stationToVertices = new HashMap<>();
+        int index = 0;
+
+        for (Station s : stations) {
+            int sId = s.getStationId();
+            Set<String> colors = stationColors.get(sId);
+            if (!colors.isEmpty()) {
+                BusVertex transferVertex = new BusVertex(sId, "TRANSFER");
+                vertices.add(transferVertex);
+                vertexToIndex.put(transferVertex.toKey(), index);
+                index++;
+
+                List<Integer> stationIndices = new ArrayList<>();
+                for (String c : colors) {
+                    BusVertex colorVertex = new BusVertex(sId, c);
+                    vertices.add(colorVertex);
+                    vertexToIndex.put(colorVertex.toKey(), index);
+                    stationIndices.add(index);
+                    index++;
+                }
+                stationToVertices.put(sId, stationIndices);
+            }
+        }
+
+        int n = vertices.size();
+        double[][] matrix = new double[n][n];
+        for (double[] row : matrix) {
+
+            Arrays.fill(row, INF);
+        }
+        for (int i = 0; i < n; i++) {
+            matrix[i][i] = 0.0;
+        }
+
+        for (Road r : roads) {
+            if (r.getMode().equalsIgnoreCase("BUS")) {
+                int fromId = r.getFromStationId();
+                int toId = r.getToStationId();
+                String color = r.getBusColor();
+                String fromKey = fromId + "_" + color;
+                String toKey = toId + "_" + color;
+                if (vertexToIndex.containsKey(fromKey) && vertexToIndex.containsKey(toKey)) {
+                    int fromIdx = vertexToIndex.get(fromKey);
+                    int toIdx = vertexToIndex.get(toKey);
+                    double distance = EuclideanDistance.euclideanDistance(
+                            new double[]{stations.get(indexOfStation(fromId)).getXCoord(), stations.get(indexOfStation(fromId)).getYCoord()},
+                            new double[]{stations.get(indexOfStation(toId)).getXCoord(), stations.get(indexOfStation(toId)).getYCoord()}
+                    );
+                    matrix[fromIdx][toIdx] = distance;
+                    if (!r.isOneWay()) {
+                        matrix[toIdx][fromIdx] = distance;
+                    }
+                }
+            }
+        }
+
+        for (Station s : stations) {
+            int sId = s.getStationId();
+            if (stationColors.get(sId).isEmpty()) continue;
+            String transferKey = sId + "_TRANSFER";
+            int transferIdx = vertexToIndex.get(transferKey);
+            for (String c : stationColors.get(sId)) {
+                String colorKey = sId + "_" + c;
+                int colorIdx = vertexToIndex.get(colorKey);
+                matrix[transferIdx][colorIdx] = 0.0;
+                matrix[colorIdx][transferIdx] = 0.0;
+            }
+        }
+
+        BusGraph bg = new BusGraph();
+        bg.setMatrix(matrix);
+        bg.setVertices(vertices);
+        bg.setVertexToIndex(vertexToIndex);
+        bg.setStationToVertices(stationToVertices);
+        return bg;
+    }
+
     /**
      * Finds the index of a station in the stored list by its station ID.
      *
      * @param stationId The ID of the station to find.
      * @return The index of the station in the list, or -1 if not found.
      */
-    private int indexOfStation(int stationId) {
+    public int indexOfStation(int stationId) {
         for (int i = 0; i < stations.size(); i++) {
             if (stations.get(i).getStationId() == stationId) {
                 return i;
@@ -101,6 +195,11 @@ public class GraphManager {
         }
         return -1; // Not found
     }
+
+    public List<Station> getStations() {
+        return stations;
+    }
+
 
     /**
      * Prints the calculated distance between two stations.
