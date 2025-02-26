@@ -6,7 +6,7 @@ import com.solvd.service.RoadService;
 import com.solvd.service.RoadServiceImpl;
 import com.solvd.service.StationService;
 import com.solvd.service.StationServiceImpl;
-
+import com.solvd.algoritms.FloydWarshall;
 import java.util.List;
 import java.util.Scanner;
 
@@ -194,13 +194,17 @@ public class NavigatorController {
 
     private void computeRoute(int startStationId, int endStationId, String mode, boolean alternative) {
         if (!alternative) {
-            System.out.println("Feature in progress: computing shortest path from "
-                    + startStationId + " to " + endStationId + " via " + mode + "...");
+            FloydWarshall.Route route = FloydWarshall.computeNavigation(startStationId, endStationId, mode);
+            System.out.println(route);
         } else {
-            System.out.println("Feature in progress: computing alternative path from "
-                    + startStationId + " to " + endStationId + " via " + mode + "...");
+            // For now, alternative path code is only implemented for "CAR" in getAlternativePath
+            if (mode.equalsIgnoreCase("CAR")) {
+                FloydWarshall.Route altRoute = FloydWarshall.getAlternativePath(startStationId, endStationId, mode);
+                System.out.println(altRoute);
+            } else {
+                System.out.println("Alternative path for BUS is not yet implemented.");
+            }
         }
-        // TODO: Integrate real Floyd-Warshall logic here
     }
 
 
