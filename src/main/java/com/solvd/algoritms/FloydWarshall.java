@@ -64,12 +64,14 @@ public class FloydWarshall {
         public List<String> details;
         public String startName;
         public String endName;
+        public double totalDistance;
 
         public Route() {
             this.stationIds = new ArrayList<>();
             this.details = new ArrayList<>();
             this.startName = "";
             this.endName = "";
+            this.totalDistance = 0.0;
         }
 
         @Override
@@ -90,6 +92,7 @@ public class FloydWarshall {
                 }
             }
             sb.append("\n");
+            sb.append("Total distance: ").append(totalDistance).append("\n");
             return sb.toString();
         }
     }
@@ -159,6 +162,13 @@ public class FloydWarshall {
 
             // Reconstruct actual path
             List<Integer> pathIndices = getPath(bestStartIdx, bestEndIdx, next);
+
+            double totalDist = 0.0;
+            for (int i = 0; i < pathIndices.size() - 1; i++) {
+                totalDist += graph[pathIndices.get(i)][pathIndices.get(i + 1)];
+            }
+            route.totalDistance = totalDist;
+
             String currentColor = bg.getVertices().get(bestStartIdx).getLabel();
             route.stationIds.add(bg.getVertices().get(bestStartIdx).getStationId());
 
@@ -233,6 +243,13 @@ public class FloydWarshall {
             }
 
             List<Integer> pathIndices = getPath(startIdx, endIdx, next);
+
+            double totalDist = 0.0;
+            for (int i = 0; i < pathIndices.size() - 1; i++) {
+                totalDist += graph[pathIndices.get(i)][pathIndices.get(i + 1)];
+            }
+            route.totalDistance = totalDist;
+
             for (int idx : pathIndices) {
                 route.stationIds.add(gm.getStations().get(idx).getStationId());
                 String stationName = gm.getStations().get(idx).getName();
@@ -348,6 +365,13 @@ public class FloydWarshall {
         Route altRoute = new Route();
         if (!altPathIndices.isEmpty() && altPathIndices.get(0) == startIndex &&
                 altPathIndices.get(altPathIndices.size() - 1) == endIndex) {
+
+            double totalDist = 0.0;
+            for (int i = 0; i < altPathIndices.size() - 1; i++) {
+                totalDist += modifiedGraph[altPathIndices.get(i)][altPathIndices.get(i + 1)];
+            }
+            altRoute.totalDistance = totalDist;
+
             for (int idx : altPathIndices) {
                 altRoute.stationIds.add(gm.getStations().get(idx).getStationId());
                 String stationName = gm.getStations().get(idx).getName();
